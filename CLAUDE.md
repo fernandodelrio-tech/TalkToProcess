@@ -18,14 +18,17 @@ Full spec: `processcompositorrequirements.md` (sections 6, 8, 9 are **binding**)
 The model set is defined in **one place** (FR-25): `src/engine/models.ts`
 (`MODELS`). Each maps to a Mermaid type:
 
-| Model | Fits when | Mermaid |
-|---|---|---|
-| Flowchart | linear/branching steps, no role ownership | `flowchart TD` |
-| Swimlane | multiple roles own steps and hand off | `flowchart LR` + subgraph per lane |
-| Sequence | time-ordered messages between actors | `sequenceDiagram` |
-| State | one entity through statuses (loops/terminal) | `stateDiagram-v2` |
-| Journey | one person's experience + sentiment | `journey` |
-| Timeline | chronology of events/phases/waves | `timeline` |
+| Model | Fits when | Mermaid | UML notation |
+|---|---|---|---|
+| Flowchart | linear/branching steps, no role ownership | `flowchart TD` | UML activity: `sm-circ` initial, `diam` decisions + guards, `framed-circle` final |
+| Swimlane | multiple roles own steps and hand off | `flowchart TB` + `direction LR` subgraph per lane | UML activity **partitions** (true lanes) |
+| Sequence | time-ordered messages between actors | `sequenceDiagram` | UML sequence: lifelines, `autonumber`, `->>` calls / `-->>` returns |
+| State | one entity through statuses (loops/terminal) | `stateDiagram-v2` | UML state machine: `[*]` initial/final |
+| Journey | one person's experience + sentiment | `journey` | (UX, not UML) |
+| Timeline | chronology of events/phases/waves | `timeline` | (not UML) |
+
+UML notation lives in the serializers in `src/engine/flow.ts` (`flowToMermaid`).
+Mermaid's expanded `@{ shape: … }` node syntax provides the activity shapes.
 
 To add a model: extend `models.ts`, add a builder in `src/engine/builders/`
 (register in `builders/index.ts`), add scoring in `src/engine/selector.ts`, add

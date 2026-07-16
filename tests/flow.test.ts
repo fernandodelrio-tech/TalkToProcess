@@ -51,9 +51,9 @@ describe('Flow IR — structural editing (FR-14) keeps code in sync', () => {
     const f = base();
     const next = updateStep(f, f.steps[0].id, { label: 'Open form', kind: 'decision' });
     expect(next.steps[0].label).toBe('Open form');
-    // A decision renders as a Mermaid diamond with Yes/No branches.
+    // A decision renders as a UML diamond with guard-labelled branches.
     const m = flowToMermaid(next);
-    expect(m).toMatch(/\{"Open form"\}/);
+    expect(m).toMatch(/shape: diam, label: "Open form"/);
     expect(m).toContain('|Yes|');
     expect(m).toContain('|No|');
   });
@@ -66,10 +66,10 @@ describe('Flow IR — structural editing (FR-14) keeps code in sync', () => {
     expect(renameStepByLabel(f, 'nonexistent', 'x')).toBeNull();
   });
 
-  it('flowchart output has Start and End terminals (best practice)', () => {
+  it('flowchart output has UML activity initial/final nodes', () => {
     const m = flowToMermaid(base());
-    expect(m).toContain('start(["Start"])');
-    expect(m).toContain('done(["End"])');
+    expect(m).toContain('init@{ shape: sm-circ }');
+    expect(m).toContain('final@{ shape: framed-circle }');
   });
 
   it('sequence editing preserves participants and message direction', () => {

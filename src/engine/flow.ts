@@ -239,29 +239,38 @@ export function flowToMermaid(flow: Flow): string {
   }
 }
 
-/** Flowchart with Start/End terminals and Yes/No decision branches. */
+/** A UML activity node in Mermaid's expanded `@{ shape }` notation. */
+function activityNode(id: string, kind: StepKind, label: string, indent = '  '): string {
+  const text = sanitizeLabel(label);
+  const shape = kind === 'decision' ? 'diam' : 'rounded';
+  return `${indent}${id}@{ shape: ${shape}, label: "${text}" }`;
+}
+
+/**
+ * UML Activity Diagram (FR: proper notation).
+ * - initial node: filled circle (`sm-circ`)
+ * - actions: rounded rectangles
+ * - decisions: diamonds with guard-labelled outgoing edges
+ * - activity final: framed circle (`framed-circle`)
+ */
 function flowchartMermaid(flow: Flow): string {
   const steps = flow.steps;
   const lines = ['flowchart TD'];
-  lines.push('  start(["Start"])');
-  steps.forEach((s, i) => {
-    const label = `"${sanitizeLabel(s.label)}"`;
-    lines.push(s.kind === 'decision' ? `  n${i}{${label}}` : `  n${i}["${sanitizeLabel(s.label)}"]`);
-  });
-  lines.push('  done(["End"])');
+  lines.push('  init@{ shape: sm-circ }');
+  steps.forEach((s, i) => lines.push(activityNode(`n${i}`, s.kind, s.label)));
+  lines.push('  final@{ shape: framed-circle }');
 
-  const nodeRef = (i: number) => (i < 0 ? 'start' : i >= steps.length ? 'done' : `n${i}`);
+  const ref = (i: number) => (i < 0 ? 'init' : i >= steps.length ? 'final' : `n${i}`);
   if (steps.length === 0) {
-    lines.push('  start --> done');
+    lines.push('  init --> final');
     return lines.join('\n');
   }
-  lines.push(`  start --> ${nodeRef(0)}`);
+  lines.push('  init --> n0');
   steps.forEach((s, i) => {
-    const next = nodeRef(i + 1);
+    const next = ref(i + 1);
     if (s.kind === 'decision') {
-      // Best practice: label the two outcomes of a decision.
       lines.push(`  n${i} -->|Yes| ${next}`);
-      lines.push(`  n${i} -->|No| done`);
+      lines.push(`  n${i} -->|No| final`);
     } else {
       lines.push(`  n${i} --> ${next}`);
     }
@@ -269,31 +278,44 @@ function flowchartMermaid(flow: Flow): string {
   return lines.join('\n');
 }
 
-/** Swimlane: one subgraph per lane, handoff edges across lanes. */
+/**
+ * True swimlanes = UML Activity Diagram with partitions.
+ * `flowchart TB` stacks each lane as a horizontal band; each lane's subgraph
+ * uses `direction LR` so the flow reads left→right across the lanes, with
+ * handoffs crossing lane boundaries vertically. Initial/final nodes live in the
+ * first/last lanes.
+ */
 function swimlaneMermaid(flow: Flow): string {
   const steps = flow.steps;
+  if (steps.length === 0) {
+    return 'flowchart TB\n  subgraph lane0["Lane"]\n    init@{ shape: sm-circ }\n    final@{ shape: framed-circle }\n  end\n  init --> final';
+  }
   const lanes = [...new Set(steps.map((s) => s.lane || 'Lane'))];
-  const lines = ['flowchart LR'];
+  const lines = ['flowchart TB'];
   lanes.forEach((lane, li) => {
     lines.push(`  subgraph lane${li}["${sanitizeLabel(lane)}"]`);
-    lines.push('    direction TB');
+    lines.push('    direction LR');
+    if (li === 0) lines.push('    init@{ shape: sm-circ }');
     steps.forEach((s, i) => {
-      if ((s.lane || 'Lane') === lane) {
-        lines.push(
-          s.kind === 'decision'
-            ? `    n${i}{"${sanitizeLabel(s.label)}"}`
-            : `    n${i}["${sanitizeLabel(s.label)}"]`,
-        );
-      }
+      if ((s.lane || 'Lane') === lane) lines.push(activityNode(`n${i}`, s.kind, s.label, '    '));
     });
+    if (li === lanes.length - 1) lines.push('    final@{ shape: framed-circle }');
     lines.push('  end');
   });
+  lines.push('  init --> n0');
   for (let i = 0; i < steps.length - 1; i++) lines.push(`  n${i} --> n${i + 1}`);
-  if (steps.length === 0) lines.push('  empty["No steps"]');
+  lines.push(`  n${steps.length - 1} --> final`);
   return lines.join('\n');
 }
 
-/** Sequence with autonumbered messages between participants. */
+/** True/false a message reads as a UML reply (dashed) rather than a call. */
+const RETURN_RE =
+  /\b(returns?|response|responds?|repl(?:y|ies|ied)|confirms?|confirmation|acknowledges?|result|answer|approv\w*|denies|denied|notif\w*)\b/i;
+
+/**
+ * UML Sequence Diagram: synchronous calls use a solid arrow (`->>`), replies use
+ * a dashed return arrow (`-->>`). Messages are autonumbered.
+ */
 function sequenceMermaid(flow: Flow): string {
   const steps = flow.steps;
   const participants: string[] = [];
@@ -310,7 +332,8 @@ function sequenceMermaid(flow: Flow): string {
   for (const s of steps) {
     const from = alias(s.from || participants[0]);
     const to = alias(s.to || s.from || participants[0]);
-    lines.push(`  ${from}->>${to}: ${sanitizeLabel(s.label, 'message')}`);
+    const arrow = RETURN_RE.test(s.label) ? '-->>' : '->>';
+    lines.push(`  ${from}${arrow}${to}: ${sanitizeLabel(s.label, 'message')}`);
   }
   if (steps.length === 0) {
     lines.push(`  ${alias(participants[0])}->>${alias(participants[1] || participants[0])}: message`);

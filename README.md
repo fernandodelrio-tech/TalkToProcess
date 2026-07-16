@@ -17,9 +17,11 @@ choice.
 - **Structured flow editing** — an Elements panel to **add, remove, reorder, and
   relabel** steps and edit per-model attributes (lane, actor, period,
   sentiment); every change regenerates the Mermaid source live (FR-14).
-- **Best-practice diagrams** — flowcharts get Start/End terminals and Yes/No
-  decision branches; state diagrams get initial/terminal states and reopen
-  loops; sequences are autonumbered.
+- **UML-standard notation** — flowcharts render as UML **activity diagrams**
+  (initial ● / final ◉ nodes, rounded actions, decision diamonds with guards);
+  swimlanes as UML **activity partitions** (true lanes the flow crosses);
+  sequences as UML **sequence diagrams** (lifelines, autonumbered calls, dashed
+  returns); state as UML **state machines** (initial/terminal, reopen loops).
 - **Two-way editing** — edit the Mermaid source live (debounced), or click a
   label in the diagram to rename it; diagram, source, and elements stay in sync
   (FR-11/12).

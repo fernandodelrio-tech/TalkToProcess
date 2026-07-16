@@ -16,19 +16,26 @@ describe('flowchart builder', () => {
     expect(m).toContain('n0');
   });
 
-  it('renders decisions as diamonds', () => {
+  it('renders decisions as UML diamonds', () => {
     const m = buildFlowchart('Review the request; if incomplete, return it; else approve');
-    expect(m).toMatch(/n\d\{/);
+    expect(m).toMatch(/n\d@\{ shape: diam/);
+  });
+
+  it('uses UML activity initial and final nodes', () => {
+    const m = buildFlowchart('Fill form, submit');
+    expect(m).toContain('init@{ shape: sm-circ }');
+    expect(m).toContain('final@{ shape: framed-circle }');
   });
 });
 
 describe('swimlane builder', () => {
-  it('emits flowchart LR with one subgraph per lane', () => {
+  it('emits true swimlanes: flowchart TB + one LR subgraph per lane', () => {
     const m = buildSwimlane(
       'Employee submits LOA; HRBP reviews; manager approves; payroll adjusts',
     );
-    expect(m.startsWith('flowchart LR')).toBe(true);
+    expect(m.startsWith('flowchart TB')).toBe(true);
     expect(m).toContain('subgraph');
+    expect(m).toContain('direction LR'); // lanes flow left-to-right
     expect(m).toContain('Employee');
     expect(m).toContain('HRBP');
     expect(m).toContain('Payroll');
