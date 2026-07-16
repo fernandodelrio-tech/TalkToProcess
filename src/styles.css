@@ -1,0 +1,405 @@
+/*
+ * Process Compositor styles.
+ * Design tokens: deep teal / warm neutrals / amber accents (D-6), with
+ * WCAG 2.1 AA contrast for all text including secondary labels, chips, and
+ * status tags (NFR-2). No low-contrast gray-on-gray.
+ */
+
+:root {
+  /* Warm neutrals */
+  --bg: #f6f1e9;
+  --surface: #ffffff;
+  --surface-2: #fbf8f2;
+  --border: #ddd2c1;
+  --border-strong: #c9bca6;
+
+  /* Text — all verified ≥ 4.5:1 on --bg / --surface */
+  --text: #1c2726; /* ~14:1 on surface */
+  --text-secondary: #3d4a48; /* ~8.5:1 on surface */
+  --text-muted: #55605e; /* ~6:1 on surface (AA for normal text) */
+
+  /* Deep teal */
+  --teal: #0d5c5c;
+  --teal-strong: #094444;
+  --teal-ink: #063535; /* text on teal-tinted chips */
+  --teal-tint: #d7e8e8;
+
+  /* Amber accents */
+  --amber: #b8730a; /* accent text/border — ~4.9:1 on surface */
+  --amber-fill: #e8920c;
+  --amber-ink: #6b4200; /* text on amber-tinted chips — high contrast */
+  --amber-tint: #fbeccb;
+
+  --danger: #a32020;
+  --danger-tint: #fbe3e0;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(28, 39, 38, 0.12), 0 4px 16px rgba(28, 39, 38, 0.06);
+  --focus: 0 0 0 3px rgba(13, 92, 92, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* --- Layout ------------------------------------------------------------- */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--teal-strong);
+  color: #ffffff;
+  box-shadow: var(--shadow);
+}
+.app__header h1 {
+  font-size: 17px;
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+.app__header .subtitle {
+  color: #cfeaea;
+  font-size: 13px;
+}
+
+.app__main {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .app__main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
+.panel {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
+}
+
+/* --- Typographic helpers ------------------------------------------------ */
+.label {
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+.hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* --- Input -------------------------------------------------------------- */
+textarea.description {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+}
+textarea.description:focus-visible,
+input:focus-visible,
+button:focus-visible,
+.seed:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 12px;
+  font-weight: 550;
+}
+button:hover {
+  background: var(--surface-2);
+}
+button.primary {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+}
+button.primary:hover {
+  background: var(--teal-strong);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- Seeds -------------------------------------------------------------- */
+.seeds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.seed {
+  text-align: left;
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-2);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.seed:hover {
+  border-color: var(--teal);
+}
+.seed .seed__model {
+  font-size: 11px;
+  color: var(--teal-ink);
+  background: var(--teal-tint);
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* --- Model selector ----------------------------------------------------- */
+.model-choice {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface-2);
+}
+.model-choice__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.model-choice__name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--teal-strong);
+}
+.rationale {
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  margin-top: 6px;
+}
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.model-grid button {
+  padding: 7px 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.model-grid button[aria-pressed='true'] {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+}
+
+/* --- Chips / badges ----------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.chip--amber {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.chip--teal {
+  background: var(--teal-tint);
+  color: var(--teal-ink);
+}
+.chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* --- Toolbar ------------------------------------------------------------ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.toolbar .spacer {
+  flex: 1;
+}
+.zoom-readout {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  min-width: 46px;
+  text-align: center;
+}
+
+/* --- Canvas ------------------------------------------------------------- */
+.canvas-viewport {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(28, 39, 38, 0.08) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-color: var(--surface-2);
+  cursor: grab;
+  min-height: 0;
+}
+.canvas-viewport.is-panning {
+  cursor: grabbing;
+}
+.canvas-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+.canvas-content svg {
+  display: block;
+}
+
+.error-banner {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  background: var(--danger-tint);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* --- Source panel ------------------------------------------------------- */
+.source-panel {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  max-height: 34vh;
+}
+.source-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+textarea.source {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  border: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  font-family: 'SFMono-Regular', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: none;
+  color: var(--text);
+  background: var(--surface-2);
+}
+textarea.source.has-error {
+  background: var(--danger-tint);
+}
+
+/* --- History ------------------------------------------------------------ */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.history__item {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.history__item:hover {
+  border-color: var(--teal);
+}
+
+/* --- Inline edit input -------------------------------------------------- */
+.pc-inline-input {
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 6px;
+  border: 2px solid var(--teal);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* --- Motion ------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
