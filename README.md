@@ -29,13 +29,28 @@ choice.
 - **Accessible** — WCAG 2.1 AA contrast, keyboard-reachable controls, respects
   `prefers-reduced-motion` (NFR-2).
 
-## Quick start
+## No-install: just open the file
+
+**[`process-compositor.html`](./process-compositor.html)** is a fully
+self-contained build — all JavaScript, CSS, and Mermaid are inlined into a
+single HTML file. **Download it and double-click it**; it runs from `file://`
+in any modern browser with **no install, no server, and no network** (on-device
+mode). Nothing you type leaves the browser (NFR-8).
+
+Rebuild it any time with:
+
+```bash
+npm install
+npm run build:standalone   # → dist-standalone/index.html
+```
+
+## Developer quick start
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
 npm test         # Vitest — includes the §12 acceptance cases
-npm run build    # self-contained static bundle in dist/
+npm run build    # normal static bundle in dist/ (code-split)
 ```
 
 Open the app, pick one of the seed examples (each resolves to a *different*
