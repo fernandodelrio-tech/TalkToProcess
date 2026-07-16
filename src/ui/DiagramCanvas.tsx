@@ -14,6 +14,9 @@ export interface CanvasHandle {
 interface Props {
   /** Already-validated Mermaid source (App only passes sources that parse). */
   source: string;
+  /** When set, this SVG is rendered instead of the Mermaid source (native
+   *  swimlane renderer). It is regenerated from the Flow IR by App. */
+  customSvg?: string | null;
   /** Called when inline label editing patches the source (FR-12). */
   onSourceChange: (next: string) => void;
   /** Structured rename via the Flow IR; returns true if it handled the rename. */
@@ -30,7 +33,7 @@ interface Props {
  * (FR-10); App surfaces the error, echoed here as a banner.
  */
 export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCanvas(
-  { source, onSourceChange, onRenameLabel, onZoom, error },
+  { source, customSvg, onSourceChange, onRenameLabel, onZoom, error },
   ref,
 ) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -61,11 +64,10 @@ export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCan
 
   useEffect(() => {
     let cancelled = false;
-    if (!source) return;
-    (async () => {
-      const result = await render(source);
-      if (cancelled || !contentRef.current || !result.ok) return;
-      contentRef.current.innerHTML = result.svg;
+
+    const paint = (svgMarkup: string) => {
+      if (cancelled || !contentRef.current) return;
+      contentRef.current.innerHTML = svgMarkup;
       const svg = contentRef.current.querySelector('svg');
       if (svg) svg.style.maxWidth = 'none'; // FR-9: our pan/zoom owns sizing.
       cleanupEditRef.current();
@@ -78,11 +80,25 @@ export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCan
         hasRenderedRef.current = true;
         requestAnimationFrame(() => panzoomRef.current?.fit());
       }
+    };
+
+    // Native renderer takes precedence over Mermaid when provided.
+    if (customSvg) {
+      paint(customSvg);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!source) return;
+    (async () => {
+      const result = await render(source);
+      if (result.ok) paint(result.svg);
     })();
     return () => {
       cancelled = true;
     };
-  }, [source]);
+  }, [source, customSvg]);
 
   return (
     <div className="canvas-viewport" ref={viewportRef} aria-label="Diagram canvas">

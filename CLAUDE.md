@@ -30,6 +30,13 @@ The model set is defined in **one place** (FR-25): `src/engine/models.ts`
 UML notation lives in the serializers in `src/engine/flow.ts` (`flowToMermaid`).
 Mermaid's expanded `@{ shape: … }` node syntax provides the activity shapes.
 
+**Two renderers.** Swimlanes can render two ways (toolbar toggle): the default
+Mermaid render, or `src/render/swimlaneSvg.ts` — a native, dependency-free SVG
+renderer that draws true equal-height parallel lanes with grid-placed nodes and
+orthogonal connectors (the gridded swimlane Mermaid's auto-layout can't do).
+Both consume the same Flow IR, so click-to-rename and export work identically.
+Mermaid stays the portable "Copy source" artifact.
+
 To add a model: extend `models.ts`, add a builder in `src/engine/builders/`
 (register in `builders/index.ts`), add scoring in `src/engine/selector.ts`, add
 acceptance cases in `tests/`.
@@ -87,7 +94,7 @@ every builder emits parseable Mermaid. Run `npm test`.
 
 ```
 src/engine/    models · selector · flow (IR) · builders/ · sanitize · llm · compose · onDevice
-src/render/    mermaidRender · panzoom · inlineEdit · export
+src/render/    mermaidRender · swimlaneSvg (native grid lanes) · panzoom · inlineEdit · export
 src/ui/        InputPanel · ModelSelector · ElementsEditor · DiagramCanvas · Toolbar · SourcePanel · HistoryList
 src/state/     history (in-memory; optional local-only persistence)
 api/           optional Azure Functions proxy (reference; only for D-1 b/c)

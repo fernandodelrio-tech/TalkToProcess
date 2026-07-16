@@ -7,7 +7,12 @@ import {
   flowToMermaid,
   renameStepByLabel,
 } from './engine/flow';
+import { sanitizeLabel } from './engine/sanitize';
+import { renderSwimlaneSvg } from './render/swimlaneSvg';
 import { validate } from './render/mermaidRender';
+
+/** Available diagram renderers. Grid lanes is our native true-swimlane view. */
+type Renderer = 'mermaid' | 'grid';
 import { copyText, downloadSvg, downloadPng, copyImage } from './render/export';
 import { makeEntry, loadHistory, saveHistory, type HistoryEntry } from './state/history';
 import { InputPanel } from './ui/InputPanel';
@@ -42,6 +47,7 @@ export default function App() {
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [scale, setScale] = useState(1);
   const [status, setStatus] = useState<string | null>(null);
+  const [renderer, setRenderer] = useState<Renderer>('mermaid');
 
   const canvasRef = useRef<CanvasHandle>(null);
   const clock = useRef(0);
@@ -123,17 +129,32 @@ export default function App() {
     [],
   );
 
-  // Inline rename routed through the IR (returns true if handled).
+  // Inline rename routed through the IR (returns true if handled). Handles both
+  // step labels and — on the grid renderer — lane header titles.
   const renameLabel = useCallback(
     (oldLabel: string, newLabel: string): boolean => {
       if (!flow || source !== flowToMermaid(flow)) return false; // source hand-edited
-      const next = renameStepByLabel(flow, oldLabel, newLabel);
+      let next = renameStepByLabel(flow, oldLabel, newLabel);
+      if (!next && flow.steps.some((s) => s.lane === oldLabel)) {
+        const lane = sanitizeLabel(newLabel, oldLabel);
+        next = { ...flow, steps: flow.steps.map((s) => (s.lane === oldLabel ? { ...s, lane } : s)) };
+      }
       if (!next) return false;
       editFlow(next);
       return true;
     },
     [flow, source, editFlow],
   );
+
+  // The native grid renderer applies only to swimlanes; otherwise fall back to
+  // Mermaid. Regenerated whenever the flow changes.
+  const canGrid = flow?.model === 'swimlane';
+  const customSvg = renderer === 'grid' && canGrid && flow ? renderSwimlaneSvg(flow) : null;
+
+  const setRendererAndFit = useCallback((r: Renderer) => {
+    setRenderer(r);
+    requestAnimationFrame(() => canvasRef.current?.fit());
+  }, []);
 
   const revert = useCallback(() => {
     if (!lastComposedSource) return;
@@ -218,10 +239,14 @@ export default function App() {
             onRevert={revert}
             canRevert={hasResult && source !== lastComposedSource}
             status={status}
+            renderer={renderer}
+            onSetRenderer={setRendererAndFit}
+            showRendererToggle={canGrid}
           />
           <DiagramCanvas
             ref={canvasRef}
             source={renderSource}
+            customSvg={customSvg}
             onSourceChange={setSource}
             onRenameLabel={renameLabel}
             onZoom={setScale}

@@ -22,6 +22,11 @@ choice.
   swimlanes as UML **activity partitions** (true lanes the flow crosses);
   sequences as UML **sequence diagrams** (lifelines, autonumbered calls, dashed
   returns); state as UML **state machines** (initial/terminal, reopen loops).
+- **Two renderers for swimlanes** — the default Mermaid render, plus a **native
+  "Grid lanes" renderer** (toggle in the toolbar) that draws true, equal-height
+  parallel lanes with grid-placed nodes and orthogonal connectors — the gridded
+  swimlane Mermaid's auto-layout can't produce. Both export to SVG/PNG and stay
+  fully offline.
 - **Two-way editing** — edit the Mermaid source live (debounced), or click a
   label in the diagram to rename it; diagram, source, and elements stay in sync
   (FR-11/12).

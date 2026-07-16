@@ -474,6 +474,29 @@ textarea.description:focus,
   text-align: center;
 }
 
+/* Segmented control (renderer toggle) */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--outline);
+  border-radius: var(--r-full);
+  overflow: hidden;
+  margin-left: 4px;
+}
+.segmented .seg {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 0;
+}
+.segmented .seg[aria-pressed='true'] {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+}
+
 /* --- Canvas ------------------------------------------------------------- */
 .canvas-viewport {
   position: relative;

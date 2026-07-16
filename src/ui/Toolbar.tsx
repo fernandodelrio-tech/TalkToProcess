@@ -10,6 +10,10 @@ interface Props {
   onRevert: () => void;
   canRevert: boolean;
   status: string | null;
+  renderer: 'mermaid' | 'grid';
+  onSetRenderer: (r: 'mermaid' | 'grid') => void;
+  /** Shown only when the current model has a native alternative renderer. */
+  showRendererToggle: boolean;
 }
 
 /** Navigation + export controls (FR-15..22, FR-13). Keyboard-reachable (NFR-2). */
@@ -25,6 +29,9 @@ export function Toolbar({
   onRevert,
   canRevert,
   status,
+  renderer,
+  onSetRenderer,
+  showRendererToggle,
 }: Props) {
   return (
     <div className="toolbar" role="toolbar" aria-label="Diagram tools">
@@ -40,6 +47,26 @@ export function Toolbar({
       <button onClick={onFit} aria-label="Fit diagram to frame">
         Fit
       </button>
+
+      {showRendererToggle && (
+        <div className="segmented" role="group" aria-label="Renderer">
+          <button
+            className="seg"
+            aria-pressed={renderer === 'mermaid'}
+            onClick={() => onSetRenderer('mermaid')}
+          >
+            Mermaid
+          </button>
+          <button
+            className="seg"
+            aria-pressed={renderer === 'grid'}
+            onClick={() => onSetRenderer('grid')}
+            title="Native true-swimlane renderer"
+          >
+            Grid lanes
+          </button>
+        </div>
+      )}
 
       <span className="spacer" />
 
