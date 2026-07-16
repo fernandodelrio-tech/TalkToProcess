@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import mermaid from 'mermaid';
 import { buildMermaid } from '../../src/engine/builders';
-import type { ModelId } from '../../src/engine/models';
+import { MODEL_IDS, type ModelId } from '../../src/engine/models';
+import { SEEDS } from '../../src/ui/seeds';
 
 /**
  * Every builder's output must be valid Mermaid. We validate with Mermaid's own
- * parser so a syntax regression in any builder fails the suite (supports FR-10:
- * we only render sources that parse).
+ * parser so a syntax regression fails the suite (supports FR-10).
+ *
+ * The CROSS-PRODUCT test is the important one: a user can override ANY input to
+ * ANY model (FR-6), so every seed rendered as every model must parse. This is
+ * the regression guard for the "override → Sequence" parse error.
  */
 beforeAll(() => {
   mermaid.initialize({ startOnLoad: false, htmlLabels: false, securityLevel: 'loose' });
@@ -24,11 +28,29 @@ const CASES: Record<ModelId, string> = {
   timeline: 'HRIS roadmap over 2026: discovery Q1, build Q2–Q3, pilot Q4',
 };
 
-describe('builders emit parseable Mermaid', () => {
+describe('builders emit parseable Mermaid (natural fit)', () => {
   for (const [model, desc] of Object.entries(CASES)) {
     it(`${model} parses`, async () => {
-      const src = buildMermaid(model as ModelId, desc);
-      await expect(mermaid.parse(src)).resolves.toBeTruthy();
+      await expect(mermaid.parse(buildMermaid(model as ModelId, desc))).resolves.toBeTruthy();
     });
+  }
+});
+
+describe('every input renders as every model without breaking (FR-6, override safety)', () => {
+  const inputs = [
+    ...SEEDS.map((s) => s.text),
+    'HRIS roadmap in three waves over 2026: discovery Q1, build Q2–Q3, pilot, cutover and hypercare Q4',
+    'Do #this {now} <fast> | "really" & carefully: at 9:00',
+    '',
+    'a',
+  ];
+  for (const model of MODEL_IDS) {
+    for (const input of inputs) {
+      it(`${model} ⟵ "${input.slice(0, 32) || '(empty)'}"`, async () => {
+        await expect(
+          mermaid.parse(buildMermaid(model, input)),
+        ).resolves.toBeTruthy();
+      });
+    }
   }
 });

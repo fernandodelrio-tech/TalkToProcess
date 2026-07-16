@@ -13,9 +13,18 @@ choice.
 
 - **Model selection with a visible, overridable rationale** — one best-fit model
   per description, with a one-line reason; override to any other model to redraw
-  the same process (FR-4/5/6).
+  the same process (FR-4/5/6). Any input renders safely as any model.
+- **Structured flow editing** — an Elements panel to **add, remove, reorder, and
+  relabel** steps and edit per-model attributes (lane, actor, period,
+  sentiment); every change regenerates the Mermaid source live (FR-14).
+- **Best-practice diagrams** — flowcharts get Start/End terminals and Yes/No
+  decision branches; state diagrams get initial/terminal states and reopen
+  loops; sequences are autonumbered.
 - **Two-way editing** — edit the Mermaid source live (debounced), or click a
-  label in the diagram to rename it; both stay in sync (FR-11/12).
+  label in the diagram to rename it; diagram, source, and elements stay in sync
+  (FR-11/12).
+- **Material 3 (Google I/O) design** — Material You color, shape, elevation, and
+  type scale, with a light/dark theme that follows the OS.
 - **Runs offline** — the on-device engine needs no network; Mermaid is bundled,
   not loaded from a CDN (NFR-1). This is the default (Decision D-1a).
 - **Two-engine architecture** — an optional model-backed engine (via a backend

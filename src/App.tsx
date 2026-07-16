@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ModelId, EngineKind } from './engine/models';
-import { compose, recomposeAs } from './engine/compose';
+import { compose } from './engine/compose';
+import {
+  type Flow,
+  parseFlow,
+  flowToMermaid,
+  renameStepByLabel,
+} from './engine/flow';
 import { validate } from './render/mermaidRender';
 import { copyText, downloadSvg, downloadPng, copyImage } from './render/export';
-import {
-  makeEntry,
-  loadHistory,
-  saveHistory,
-  type HistoryEntry,
-} from './state/history';
+import { makeEntry, loadHistory, saveHistory, type HistoryEntry } from './state/history';
 import { InputPanel } from './ui/InputPanel';
 import { ModelSelector } from './ui/ModelSelector';
+import { ElementsEditor } from './ui/ElementsEditor';
 import { DiagramCanvas, type CanvasHandle } from './ui/DiagramCanvas';
 import { Toolbar } from './ui/Toolbar';
 import { SourcePanel } from './ui/SourcePanel';
@@ -26,6 +28,9 @@ export default function App() {
   const [model, setModel] = useState<ModelId>('flowchart');
   const [rationale, setRationale] = useState('');
   const [engine, setEngine] = useState<EngineKind>('on-device');
+
+  // The Flow IR is canonical: structural edits mutate it and regenerate source.
+  const [flow, setFlow] = useState<Flow | null>(null);
 
   // `source` is the live edit buffer; `renderSource` only updates when valid,
   // so an invalid edit keeps the last good render (FR-10).
@@ -61,16 +66,20 @@ export default function App() {
     setTimeout(() => setStatus(null), 1800);
   }, []);
 
-  const applyResult = useCallback(
-    (nextSource: string, nextModel: ModelId, nextRationale: string, nextEngine: EngineKind) => {
-      setModel(nextModel);
+  /** Adopt a Flow as the source of truth and render it. */
+  const applyFlow = useCallback(
+    (nextFlow: Flow, nextRationale: string, nextEngine: EngineKind, fit = true) => {
+      const src = flowToMermaid(nextFlow);
+      setFlow(nextFlow);
+      setModel(nextFlow.model);
       setRationale(nextRationale);
       setEngine(nextEngine);
-      setSource(nextSource);
-      setRenderSource(nextSource);
-      setLastComposedSource(nextSource);
+      setSource(src);
+      setRenderSource(src);
+      setLastComposedSource(src);
       setSourceError(null);
       setHasResult(true);
+      if (fit) requestAnimationFrame(() => canvasRef.current?.fit());
     },
     [],
   );
@@ -80,7 +89,8 @@ export default function App() {
     setComposing(true);
     try {
       const out = await compose(description);
-      applyResult(out.result.mermaid, out.result.model, out.result.rationale, out.engine);
+      const f = parseFlow(description, out.result.model);
+      applyFlow(f, out.result.rationale, out.engine);
       clock.current += 1;
       const entry = makeEntry(description, out.result, out.engine, clock.current);
       setHistory((prev) => {
@@ -88,19 +98,41 @@ export default function App() {
         saveHistory(next, false); // in-memory by default (privacy — NFR-10).
         return next;
       });
-      requestAnimationFrame(() => canvasRef.current?.fit());
     } finally {
       setComposing(false);
     }
-  }, [description, composing, applyResult]);
+  }, [description, composing, applyFlow]);
 
   const overrideModel = useCallback(
     (m: ModelId) => {
-      const result = recomposeAs(description || sourceToDescription(source), m);
-      applyResult(result.mermaid, result.model, result.rationale, 'on-device');
-      requestAnimationFrame(() => canvasRef.current?.fit());
+      const src = description || sourceToDescription(source);
+      applyFlow(parseFlow(src, m), `Rendered as ${m} (user-selected).`, 'on-device');
     },
-    [description, source, applyResult],
+    [description, source, applyFlow],
+  );
+
+  // Structural edit from the Elements editor: regenerate + re-render live.
+  const editFlow = useCallback(
+    (next: Flow) => {
+      setFlow(next);
+      const src = flowToMermaid(next);
+      setSource(src);
+      setRenderSource(src);
+      setSourceError(null);
+    },
+    [],
+  );
+
+  // Inline rename routed through the IR (returns true if handled).
+  const renameLabel = useCallback(
+    (oldLabel: string, newLabel: string): boolean => {
+      if (!flow || source !== flowToMermaid(flow)) return false; // source hand-edited
+      const next = renameStepByLabel(flow, oldLabel, newLabel);
+      if (!next) return false;
+      editFlow(next);
+      return true;
+    },
+    [flow, source, editFlow],
   );
 
   const revert = useCallback(() => {
@@ -114,13 +146,11 @@ export default function App() {
   const restore = useCallback(
     (entry: HistoryEntry) => {
       setDescription(entry.description);
-      applyResult(entry.result.mermaid, entry.result.model, entry.result.rationale, entry.engine);
-      requestAnimationFrame(() => canvasRef.current?.fit());
+      applyFlow(parseFlow(entry.description, entry.result.model), entry.result.rationale, entry.engine);
     },
-    [applyResult],
+    [applyFlow],
   );
 
-  // Export handlers.
   const onCopyMermaid = useCallback(async () => {
     await copyText(source);
     flashStatus('Source copied');
@@ -140,13 +170,20 @@ export default function App() {
     [flashStatus],
   );
 
+  const outOfSync = !!flow && source !== flowToMermaid(flow);
+
   return (
     <div className="app">
       <header className="app__header">
-        <h1>Process Compositor</h1>
-        <span className="subtitle">
-          Describe a process — it picks the best-fit diagram and explains why.
-        </span>
+        <div className="app__brand">
+          <span className="app__logo" aria-hidden="true" />
+          <div>
+            <h1>Process Compositor</h1>
+            <span className="subtitle">
+              Describe a process — it picks the best-fit diagram and explains why.
+            </span>
+          </div>
+        </div>
       </header>
 
       <div className="app__main">
@@ -164,6 +201,7 @@ export default function App() {
             onOverride={overrideModel}
             hasResult={hasResult}
           />
+          {flow && <ElementsEditor flow={flow} onChange={editFlow} outOfSync={outOfSync} />}
           <HistoryList entries={history} onRestore={restore} />
         </aside>
 
@@ -185,6 +223,7 @@ export default function App() {
             ref={canvasRef}
             source={renderSource}
             onSourceChange={setSource}
+            onRenameLabel={renameLabel}
             onZoom={setScale}
             error={sourceError}
           />
@@ -197,8 +236,8 @@ export default function App() {
   );
 }
 
-/** When overriding after manual source edits with no description, fall back to
- *  a rough description reconstructed from the source's text (best-effort). */
+/** When overriding after manual source edits with no description, reconstruct a
+ *  rough description from the source text (best-effort). */
 function sourceToDescription(source: string): string {
   return source.replace(/[\n]+/g, '; ');
 }

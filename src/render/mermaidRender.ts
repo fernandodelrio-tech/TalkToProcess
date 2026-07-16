@@ -15,20 +15,19 @@ let renderSeq = 0;
 
 export function initMermaid(): void {
   if (initialized) return;
-  const reducedMotion =
+  const dark =
     typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
+    theme: dark ? 'dark' : 'default', // match the Material 3 light/dark surface.
     htmlLabels: false, // FR-9: vector text, not HTML-in-SVG.
     flowchart: { htmlLabels: false, useMaxWidth: false },
     sequence: { useMaxWidth: false },
     state: { useMaxWidth: false },
     journey: { useMaxWidth: false },
-    // Respect reduced-motion (NFR-2) — Mermaid animates some diagram types.
-    ...(reducedMotion ? {} : {}),
   });
   initialized = true;
 }

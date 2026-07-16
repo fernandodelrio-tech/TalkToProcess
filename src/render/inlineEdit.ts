@@ -12,6 +12,12 @@ import { sanitizeLabel } from '../engine/sanitize';
 export interface InlineEditHandlers {
   getSource: () => string;
   setSource: (next: string) => void;
+  /**
+   * Optional structured rename. If provided and it returns true, the rename was
+   * applied to the Flow IR (which regenerates the source), so we skip the raw
+   * source patch. Keeps the diagram, code, and Elements editor in sync (FR-12).
+   */
+  renameInFlow?: (oldLabel: string, newLabel: string) => boolean;
 }
 
 /**
@@ -65,6 +71,8 @@ function beginEdit(text: SVGTextElement, handlers: InlineEditHandlers): void {
     const next = sanitizeLabel(input.value, oldLabel);
     cleanup();
     if (next && next !== oldLabel) {
+      // Prefer the structured path so the IR / Elements editor stay in sync.
+      if (handlers.renameInFlow?.(oldLabel, next)) return;
       const patched = patchSource(handlers.getSource(), oldLabel, next);
       handlers.setSource(patched);
     }

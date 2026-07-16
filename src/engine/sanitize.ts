@@ -6,8 +6,13 @@
  * its user-derived text through `sanitizeLabel` before emitting Mermaid.
  */
 
-/** Characters that have structural meaning in Mermaid and must be neutralized. */
-const RESERVED = /[#&<>|{}[\]()"';]/g;
+/**
+ * Characters that have structural meaning in Mermaid and must be neutralized.
+ * Includes `:` (separates timeline periods, journey scores, and sequence
+ * messages) and backtick, which otherwise break rendering when they appear
+ * inside a label — e.g. a sequence message containing "2026: discovery".
+ */
+const RESERVED = /[#&<>|{}[\]()"';:`]/g;
 
 /**
  * Clean a single label for safe embedding inside a Mermaid node/edge/actor.

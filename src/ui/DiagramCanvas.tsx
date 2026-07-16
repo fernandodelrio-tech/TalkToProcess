@@ -16,6 +16,8 @@ interface Props {
   source: string;
   /** Called when inline label editing patches the source (FR-12). */
   onSourceChange: (next: string) => void;
+  /** Structured rename via the Flow IR; returns true if it handled the rename. */
+  onRenameLabel?: (oldLabel: string, newLabel: string) => boolean;
   /** Reports live zoom for the toolbar readout. */
   onZoom?: (scale: number) => void;
   /** Non-destructive error to surface over the last good render (FR-10). */
@@ -28,7 +30,7 @@ interface Props {
  * (FR-10); App surfaces the error, echoed here as a banner.
  */
 export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCanvas(
-  { source, onSourceChange, onZoom, error },
+  { source, onSourceChange, onRenameLabel, onZoom, error },
   ref,
 ) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,8 @@ export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCan
   const hasRenderedRef = useRef(false);
   const onSourceChangeRef = useRef(onSourceChange);
   onSourceChangeRef.current = onSourceChange;
+  const onRenameLabelRef = useRef(onRenameLabel);
+  onRenameLabelRef.current = onRenameLabel;
 
   useEffect(() => {
     if (!viewportRef.current || !contentRef.current) return;
@@ -68,6 +72,7 @@ export const DiagramCanvas = forwardRef<CanvasHandle, Props>(function DiagramCan
       cleanupEditRef.current = enableInlineEdit(contentRef.current, {
         getSource: () => source,
         setSource: (next) => onSourceChangeRef.current(next),
+        renameInFlow: (oldL, newL) => onRenameLabelRef.current?.(oldL, newL) ?? false,
       });
       if (!hasRenderedRef.current) {
         hasRenderedRef.current = true;

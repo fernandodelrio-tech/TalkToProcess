@@ -83,10 +83,21 @@ every builder emits parseable Mermaid. Run `npm test`.
 ## Structure
 
 ```
-src/engine/    models · selector · builders/ · sanitize · llm · compose · onDevice
+src/engine/    models · selector · flow (IR) · builders/ · sanitize · llm · compose · onDevice
 src/render/    mermaidRender · panzoom · inlineEdit · export
-src/ui/        InputPanel · ModelSelector · DiagramCanvas · Toolbar · SourcePanel · HistoryList
+src/ui/        InputPanel · ModelSelector · ElementsEditor · DiagramCanvas · Toolbar · SourcePanel · HistoryList
 src/state/     history (in-memory; optional local-only persistence)
 api/           optional Azure Functions proxy (reference; only for D-1 b/c)
-tests/         selector (§12) · builders · sanitize · inlineEdit · llm
+tests/         selector (§12) · flow · builders (incl. cross-product parse) · sanitize · inlineEdit · llm
 ```
+
+## Flow IR — the editable model (`src/engine/flow.ts`)
+
+Every model is one ordered list of `Step`s plus model-level fields. The IR is
+built from a description (`parseFlow`), serialized to **best-practice** Mermaid
+(`flowToMermaid`), and edited structurally (add/remove/move/update). Because
+edits mutate the IR and the source is regenerated from it, the diagram, source,
+and Elements editor stay in sync (FR-11/12/14). The builders in `builders/` are
+thin delegates over the IR, so **every** model always emits parseable Mermaid
+for **any** input (the cross-product test in `tests/builders/parse.test.ts` is
+the guard — a user can override any input to any model, FR-6).
